@@ -1,10 +1,12 @@
-# Auditable Ecommerce Analytics Agent
+# Auditable Ecommerce Analytics Agent — Semantic Layer, Governed SQL & Golden Evals
 
-**A reliability-first analytics agent that answers governed metric questions—and refuses to answer when the data is not trustworthy.**
+**A reliability-first agentic analytics system with data contracts, deterministic orchestration, quality-aware abstention, and inspectable SQL traces.**
 
 Most analytics-agent demos begin with a clean table and end with generated SQL. This project models the harder, more realistic workflow: define business meaning, detect and repair data issues, constrain how metrics can be queried, expose the evidence behind every answer, and abstain when a valid answer is impossible.
 
 > Portfolio status: deterministic MVP on a reproducible synthetic ecommerce environment. It demonstrates product and system design; it is not a production-accuracy claim.
+
+`Python` · `SQLite` · `Analytics Agent` · `Semantic Layer` · `Data Contracts` · `Data Quality Gates` · `Governed SQL` · `Deterministic Orchestration` · `Human-in-the-Loop` · `Golden Evals` · `Abstention`
 
 ## Why this project is different
 
@@ -16,6 +18,21 @@ Most analytics-agent demos begin with a clean table and end with generated SQL. 
 | **Reliability over forced answers** | The agent distinguishes cleaned results, investigation context, and unavailable metrics. It abstains instead of returning zero, extrapolating, or inventing missing events. |
 | **Reusable, not hard-coded to one question** | The same contract → cleanup → trusted layer → governed tool → agent → evaluation workflow can be extended to new metrics and datasets. |
 | **Evaluation-driven** | Deterministic tests and evaluator-only golden cases protect both numerical correctness and business-policy behavior. |
+
+## Technical core
+
+| Technique | Implementation | Why it matters |
+|---|---|---|
+| **Semantic layer and metric contracts** | Versioned YAML defines grain, keys, joins, dimensions, denominators, identity policy, refund timing, and fraud treatment | Keeps business meaning out of ad hoc prompts and one-off SQL |
+| **Deterministic data-quality pipeline** | Repeatable deduplication, canonical Visit reconstruction, schema normalization, eligibility flags, and reconciliation checks | Repairs known defects without deleting legitimate business changes |
+| **Trusted analytical layer** | Raw evidence is preserved while governed tables expose canonical identities, Visits, events, orders, and health windows | Separates auditable source history from business-ready metrics |
+| **Governed SQL tools** | Whitelisted metrics and dimensions run through parameterized, read-only SQLite queries | Prevents arbitrary Text-to-SQL access and makes every computation reproducible |
+| **Deterministic agent orchestration** | Intent parsing, metric resolution, health checks, comparison, investigation, and response assembly follow an inspectable workflow | Provides an auditable baseline before adding broader LLM flexibility |
+| **Quality-aware abstention** | Coverage checks and metric-specific health gates return `unavailable` instead of zero, extrapolation, or fabricated events | Makes refusal a product behavior rather than an error case |
+| **Human-in-the-loop governance** | Metric meaning, risk policy, and release boundaries are approved at explicit checkpoints | Keeps high-impact business decisions with accountable owners |
+| **Golden evaluation and regression tests** | Evaluator-only truth, negative controls, 37 automated tests, and eight golden scenarios validate numbers and policy behavior | Protects the system from silent semantic and data-quality regressions |
+
+The key design pattern is **deterministic computation for metrics, governed evidence for explanations, and explicit abstention when trust requirements fail**.
 
 ## Verified proof points
 
