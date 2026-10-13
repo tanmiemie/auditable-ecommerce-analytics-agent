@@ -13,27 +13,26 @@ from .trusted_layer import TRUSTED_DB
 
 
 METRIC_ALIASES = (
-    ("visitor_purchase_conversion_rate", ("visitor conversion", "visitor-level conversion", "访客转化率", "用户转化率")),
-    ("visit_purchase_conversion_rate", ("visit conversion", "visit-level conversion", "访问转化率", "session conversion")),
-    ("checkout_start_rate", ("checkout start rate", "checkout rate", "结账开始率", "checkout tracking")),
-    ("gross_revenue", ("gross revenue", "毛收入")),
-    ("net_revenue", ("net revenue", "净收入")),
-    ("visits", ("visits", "visit count", "访问量", "访问次数", "流量")),
+    ("visitor_purchase_conversion_rate", ("visitor conversion", "visitor-level conversion")),
+    ("visit_purchase_conversion_rate", ("visit conversion", "visit-level conversion", "session conversion")),
+    ("checkout_start_rate", ("checkout start rate", "checkout rate", "checkout tracking")),
+    ("gross_revenue", ("gross revenue",)),
+    ("net_revenue", ("net revenue",)),
+    ("visits", ("visits", "visit count")),
 )
-AMBIGUOUS_CONVERSION = ("purchase conversion", "conversion rate", "购买转化率", "转化率")
+AMBIGUOUS_CONVERSION = ("purchase conversion", "conversion rate")
 DIMENSION_ALIASES = {
-    "platform": ("platform", "平台"),
-    "app_version": ("app version", "app_version", "版本"),
-    "channel": ("channel", "渠道"),
-    "country": ("country", "国家"),
-    "shipping_country": ("shipping country", "收货国家"),
-    "campaign_id": ("campaign", "活动"),
-    "is_employee_order": ("employee", "员工"),
-    "date": ("daily", "by day", "每天", "按日", "日期"),
+    "platform": ("platform",),
+    "app_version": ("app version", "app_version"),
+    "channel": ("channel",),
+    "country": ("country",),
+    "shipping_country": ("shipping country",),
+    "campaign_id": ("campaign",),
+    "is_employee_order": ("employee",),
+    "date": ("daily", "by day", "date"),
 }
 MONTHS = {
     "january": 1, "february": 2, "march": 3, "april": 4,
-    "1月": 1, "2月": 2, "3月": 3, "4月": 4,
 }
 PLATFORMS = {"web": "web", "ios": "ios", "android": "android"}
 
@@ -62,7 +61,7 @@ def _extract_months(q: str) -> list[int]:
 
 
 def _extract_as_of(q: str) -> str | None:
-    iso = re.search(r"(?:as of|截至)\s*((?:19|20)\d{2}-\d{2}-\d{2})(?:[t\s](\d{2}:\d{2}(?::\d{2})?z?))?", q)
+    iso = re.search(r"as of\s*((?:19|20)\d{2}-\d{2}-\d{2})(?:[t\s](\d{2}:\d{2}(?::\d{2})?z?))?", q)
     if iso:
         time_part = iso.group(2) or "23:59:59Z"
         if len(time_part) == 5:
@@ -70,9 +69,6 @@ def _extract_as_of(q: str) -> str | None:
         if not time_part.lower().endswith("z"):
             time_part += "Z"
         return f"{iso.group(1)}T{time_part.upper()}"
-    zh = re.search(r"截至\s*(\d{1,2})月(\d{1,2})日", q)
-    if zh:
-        return f"2026-{int(zh.group(1)):02d}-{int(zh.group(2)):02d}T23:59:59Z"
     return None
 
 
@@ -121,9 +117,9 @@ def parse_question(question: str) -> Request:
             filters["platform"] = canonical
             break
 
-    intent = "investigation" if any(word in q for word in ("why", "investigate", "原因", "为什么", "上涨", "下降", "变化")) else "metric_lookup"
+    intent = "investigation" if any(word in q for word in ("why", "investigate", "increase", "decrease", "change")) else "metric_lookup"
     if metric == "net_revenue" and not as_of:
-        raise ValueError("Net Revenue requires an explicit report as-of date, for example: 截至2026-05-11.")
+        raise ValueError("Net Revenue requires an explicit report as-of date, for example: as of 2026-05-11.")
 
     return Request(intent, metric, start, end, dimension, filters, compare_start, compare_end, as_of)
 

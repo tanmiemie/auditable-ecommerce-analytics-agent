@@ -3,7 +3,7 @@
     "id": "NORMAL-01",
     "name": "visitor conversion by country",
     "target": "agent_answer",
-    "input": {"question": "按国家比较3月访客转化率"},
+    "input": {"question": "Compare March visitor conversion by country"},
     "checks": [
       {"path": "answer_status", "op": "equals", "expected": "answered"},
       {"path": "quality_status", "op": "equals", "expected": "trusted"},
@@ -16,7 +16,7 @@
     "id": "BOT-01",
     "name": "suspected bot adjustment",
     "target": "agent_answer",
-    "input": {"question": "1月 Web visits 为什么上涨？"},
+    "input": {"question": "Why did Web visits increase in January?"},
     "checks": [
       {"path": "quality_status", "op": "equals", "expected": "adjusted"},
       {"path": "investigation.classification", "op": "equals", "expected": "data_quality_adjustment"},
@@ -29,7 +29,7 @@
     "id": "VIS-02",
     "name": "session inflation reconstruction",
     "target": "agent_answer",
-    "input": {"question": "2026-02-15 to 2026-02-18 Web visits 为什么变化？"},
+    "input": {"question": "Why did Web visits change from 2026-02-15 to 2026-02-18?"},
     "checks": [
       {"path": "quality_status", "op": "equals", "expected": "adjusted"},
       {"path": "presentation.data_quality_flags.0.start_date", "op": "equals", "expected": "2026-02-15"},
@@ -41,7 +41,7 @@
     "id": "TRK-01",
     "name": "checkout tracking outage abstention",
     "target": "agent_answer",
-    "input": {"question": "2026-03-15 to 2026-03-18 iOS checkout tracking 数据可以用吗？"},
+    "input": {"question": "Is iOS checkout tracking available from 2026-03-15 to 2026-03-18?"},
     "checks": [
       {"path": "answer_status", "op": "equals", "expected": "abstained"},
       {"path": "quality_status", "op": "equals", "expected": "unavailable"},
@@ -54,7 +54,7 @@
     "id": "FRAUD-01",
     "name": "payment velocity risk escalation",
     "target": "agent_answer",
-    "input": {"question": "2026-02-25 to 2026-02-26 Web gross revenue 为什么变化？"},
+    "input": {"question": "Why did Web gross revenue change from 2026-02-25 to 2026-02-26?"},
     "checks": [
       {"path": "investigation.classification", "op": "equals", "expected": "security_review_candidate"},
       {"path": "investigation.recommended_action", "op": "contains", "expected": "Risk"}
@@ -64,7 +64,7 @@
     "id": "BIZ-01",
     "name": "campaign negative control",
     "target": "agent_answer",
-    "input": {"question": "2026-01-20 to 2026-01-26 Web visits 为什么上涨？"},
+    "input": {"question": "Why did Web visits increase from 2026-01-20 to 2026-01-26?"},
     "checks": [
       {"path": "quality_status", "op": "equals", "expected": "trusted"},
       {"path": "investigation.classification", "op": "equals", "expected": "business_context_candidate"},
@@ -76,7 +76,7 @@
     "id": "BOUNDARY-01",
     "name": "out of coverage abstention",
     "target": "agent_answer",
-    "input": {"question": "2025年 visits 是多少？"},
+    "input": {"question": "How many visits occurred in 2025?"},
     "checks": [
       {"path": "answer_status", "op": "equals", "expected": "abstained"},
       {"path": "quality_status", "op": "equals", "expected": "unavailable"},
@@ -88,7 +88,7 @@
     "id": "AMBIGUITY-01",
     "name": "conversion denominator clarification",
     "target": "agent_answer",
-    "input": {"question": "按国家比较3月购买转化率"},
+    "input": {"question": "Compare March purchase conversion rate by country"},
     "expected_error": "denominator"
   }
 ]

@@ -12,11 +12,11 @@ from analytics_agent.trusted_layer import TRUSTED_DB, build
 
 
 QUESTIONS = [
-    "1月 Web visits 为什么上涨？",
-    "按国家比较3月访客转化率",
-    "截至2026-05-11，3月净收入与2月相比如何？",
-    "2026-03-15 to 2026-03-18 iOS checkout tracking 数据可以用吗？",
-    "2025年 visits 是多少？",
+    "Why did Web visits increase in January?",
+    "Compare March visitor conversion by country",
+    "As of 2026-05-11, how did March net revenue compare with February?",
+    "Is iOS checkout tracking available from 2026-03-15 to 2026-03-18?",
+    "How many visits occurred in 2025?",
 ]
 
 

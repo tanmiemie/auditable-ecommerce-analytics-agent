@@ -30,17 +30,23 @@ Most analytics-agent demos begin with a clean table and end with generated SQL. 
 
 The dataset is generated from seed `42` and covers 120 days, 10,000 users, 71,279 raw sessions, 320,986 raw events, and 5,593 orders. Generated data and databases are intentionally excluded from Git so the public repository stays lightweight and reproducible.
 
+### Dataset access
+
+For immediate exploration, download the versioned synthetic dataset from the [latest GitHub Release](https://github.com/tanmiemie/auditable-ecommerce-analytics-agent/releases/latest). For full reproducibility, regenerate the same data locally with `python3 generator/generate_data.py`. This keeps large generated files out of Git history while supporting collaborators who want to begin analysis without waiting for generation.
+
+See [Dataset guide](docs/DATASET.md) for contents, provenance, and usage boundaries.
+
 ## Example behavior
 
-**Question:** `1月 Web visits 为什么上涨？`
+**Question:** `Why did Web visits increase in January?`
 
 The agent returns 5,423 cleaned Visits, discloses that 375 suspected-automation Visits from Jan 10–12 were blocked from the headline, and surfaces a Jan 20–26 campaign as context without claiming unproven causality.
 
-**Question:** `2026-03-15 to 2026-03-18 iOS checkout tracking 数据可以用吗？`
+**Question:** `Is iOS checkout tracking available from 2026-03-15 to 2026-03-18?`
 
 The agent returns `unavailable`. Server-side orders continued while iOS 6.1.0 checkout events were missing, but it does not use orders to fabricate missing client events.
 
-**Question:** `截至2026-05-11，3月净收入与2月相比如何？`
+**Question:** `As of 2026-05-11, how did March net revenue compare with February?`
 
 The agent applies refund requests at request time, checks the 30-day refund-maturity window against the explicit as-of date, and labels whether each revenue cohort is final.
 
@@ -100,7 +106,7 @@ Run one question:
 
 ```bash
 PYTHONPATH=src python3 -m analytics_agent.agent \
-  "截至2026-05-11，3月净收入与2月相比如何？"
+  "As of 2026-05-11, how did March net revenue compare with February?"
 ```
 
 ## Answer contract
@@ -123,6 +129,7 @@ The agent cannot execute arbitrary SQL, modify source data, confirm suspected fr
 |---|---|
 | `config/` | Semantic, metric, and data-quality contracts |
 | `generator/` | Reproducible synthetic environment and evaluator reference builder |
+| `scripts/package_dataset.py` | Builds the versioned collaborator download bundle |
 | `src/analytics_agent/trusted_layer.py` | Deterministic raw-to-trusted transformation |
 | `src/analytics_agent/governed_tools.py` | Whitelisted, parameterized metric and evidence tools |
 | `src/analytics_agent/agent.py` | Scoped deterministic orchestration and response contract |
@@ -144,6 +151,7 @@ The agent cannot execute arbitrary SQL, modify source data, confirm suspected fr
 
 - [Portfolio case study](docs/PORTFOLIO_CASE_STUDY.md)
 - [Live demo script](docs/DEMO.md)
+- [Dataset guide](docs/DATASET.md)
 - [Semantic layer](docs/semantic_layer.md)
 - [Data-cleanup checklist](docs/DATA_CLEANUP_CHECKLIST.md)
 - [Governed analytics tools](docs/GOVERNED_ANALYTICS_TOOLS.md)
