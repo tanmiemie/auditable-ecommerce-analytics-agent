@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Generate synthetic data
+        run: python3 generator/generate_data.py
+      - name: Validate injected scenarios
+        run: python3 validation/validate_generated_data.py
+      - name: Run unit and regression tests
+        run: PYTHONPATH=src python3 -m unittest discover -s tests -v
+      - name: Run golden evaluation
+        run: PYTHONPATH=src python3 evals/run_evals.py

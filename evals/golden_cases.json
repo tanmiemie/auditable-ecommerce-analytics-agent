@@ -1,0 +1,94 @@
+[
+  {
+    "id": "NORMAL-01",
+    "name": "visitor conversion by country",
+    "target": "agent_answer",
+    "input": {"question": "按国家比较3月访客转化率"},
+    "checks": [
+      {"path": "answer_status", "op": "equals", "expected": "answered"},
+      {"path": "quality_status", "op": "equals", "expected": "trusted"},
+      {"path": "request.metric", "op": "equals", "expected": "visitor_purchase_conversion_rate"},
+      {"path": "presentation.headline_result.0.value", "op": "approx", "expected": 0.151737},
+      {"path": "executed_queries.current.sql", "op": "contains", "expected": "canonical_visits"}
+    ]
+  },
+  {
+    "id": "BOT-01",
+    "name": "suspected bot adjustment",
+    "target": "agent_answer",
+    "input": {"question": "1月 Web visits 为什么上涨？"},
+    "checks": [
+      {"path": "quality_status", "op": "equals", "expected": "adjusted"},
+      {"path": "investigation.classification", "op": "equals", "expected": "data_quality_adjustment"},
+      {"path": "presentation.headline_result.0.value", "op": "equals", "expected": 5423},
+      {"path": "presentation.data_quality_flags.0.treatment", "op": "equals", "expected": "blocked_and_excluded_from_headline"},
+      {"path": "presentation.data_quality_flags.0.blocked_or_adjusted_value", "op": "equals", "expected": 375}
+    ]
+  },
+  {
+    "id": "VIS-02",
+    "name": "session inflation reconstruction",
+    "target": "agent_answer",
+    "input": {"question": "2026-02-15 to 2026-02-18 Web visits 为什么变化？"},
+    "checks": [
+      {"path": "quality_status", "op": "equals", "expected": "adjusted"},
+      {"path": "presentation.data_quality_flags.0.start_date", "op": "equals", "expected": "2026-02-15"},
+      {"path": "presentation.data_quality_flags.0.end_date", "op": "equals", "expected": "2026-02-18"},
+      {"path": "presentation.data_quality_flags.0.treatment", "op": "equals", "expected": "reconstructed_with_approved_30_minute_rule"}
+    ]
+  },
+  {
+    "id": "TRK-01",
+    "name": "checkout tracking outage abstention",
+    "target": "agent_answer",
+    "input": {"question": "2026-03-15 to 2026-03-18 iOS checkout tracking 数据可以用吗？"},
+    "checks": [
+      {"path": "answer_status", "op": "equals", "expected": "abstained"},
+      {"path": "quality_status", "op": "equals", "expected": "unavailable"},
+      {"path": "result", "op": "length", "expected": 0},
+      {"path": "quality_issues.0.app_version", "op": "equals", "expected": "6.1.0"},
+      {"path": "presentation.data_quality_flags.0.treatment", "op": "equals", "expected": "authoritative_answer_blocked"}
+    ]
+  },
+  {
+    "id": "FRAUD-01",
+    "name": "payment velocity risk escalation",
+    "target": "agent_answer",
+    "input": {"question": "2026-02-25 to 2026-02-26 Web gross revenue 为什么变化？"},
+    "checks": [
+      {"path": "investigation.classification", "op": "equals", "expected": "security_review_candidate"},
+      {"path": "investigation.recommended_action", "op": "contains", "expected": "Risk"}
+    ]
+  },
+  {
+    "id": "BIZ-01",
+    "name": "campaign negative control",
+    "target": "agent_answer",
+    "input": {"question": "2026-01-20 to 2026-01-26 Web visits 为什么上涨？"},
+    "checks": [
+      {"path": "quality_status", "op": "equals", "expected": "trusted"},
+      {"path": "investigation.classification", "op": "equals", "expected": "business_context_candidate"},
+      {"path": "investigation.evidence.campaigns.0.campaign_id", "op": "equals", "expected": "CAMP_SOCIAL_JAN"},
+      {"path": "investigation.limitations", "op": "contains", "expected": "Temporal overlap is context, not proof of causality."}
+    ]
+  },
+  {
+    "id": "BOUNDARY-01",
+    "name": "out of coverage abstention",
+    "target": "agent_answer",
+    "input": {"question": "2025年 visits 是多少？"},
+    "checks": [
+      {"path": "answer_status", "op": "equals", "expected": "abstained"},
+      {"path": "quality_status", "op": "equals", "expected": "unavailable"},
+      {"path": "result", "op": "length", "expected": 0},
+      {"path": "quality_issues.0.available_start_date", "op": "equals", "expected": "2026-01-01"}
+    ]
+  },
+  {
+    "id": "AMBIGUITY-01",
+    "name": "conversion denominator clarification",
+    "target": "agent_answer",
+    "input": {"question": "按国家比较3月购买转化率"},
+    "expected_error": "denominator"
+  }
+]

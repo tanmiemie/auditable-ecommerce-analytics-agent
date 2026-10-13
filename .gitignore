@@ -1,0 +1,18 @@
+.DS_Store
+**/.DS_Store
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Reproducible generated datasets and databases
+data/raw/*.csv
+data/*.sqlite
+ground_truth/*.sqlite
+ground_truth/generation_summary.json
+ground_truth/incident_manifest.json
+ground_truth/expected_reconciliation.json
+
+# Local outputs
+eval-results.json
+*.log

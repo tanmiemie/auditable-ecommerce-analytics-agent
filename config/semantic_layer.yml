@@ -1,0 +1,209 @@
+version: 1
+status: approved_checkpoint_1
+timezone: UTC
+
+entities:
+  user:
+    description: A registered customer account.
+    key: user_id
+  anonymous_identity:
+    description: A browser or device identity that may later be linked to a registered user.
+    key: anonymous_id
+  raw_session:
+    description: A session emitted by the source sessionization system; not necessarily a canonical visit.
+    key: session_id
+  canonical_visit:
+    description: A sequence of valid events for the same canonical visitor, split when consecutive events are more than 30 minutes apart.
+    derived_key: canonical_visit_id
+    approval_status: approved_at_checkpoint_1
+  event:
+    description: A client-side behavioral event; network retries may duplicate event_id.
+    candidate_key: event_id
+  order:
+    description: A server-side order.
+    key: order_id
+
+tables:
+  users:
+    grain: one row per registered user
+    primary_key: [user_id]
+    event_time: signup_ts
+    required: [user_id, signup_ts, country, acquisition_channel, platform, is_employee]
+    accepted_values:
+      country: [US, CA, GB]
+      platform: [web, ios, android]
+      is_employee: ['0', '1']
+
+  identity_map:
+    grain: one identity-link record per anonymous_id in the current synthetic dataset
+    primary_key: [anonymous_id]
+    foreign_keys:
+      - columns: [user_id]
+        references: users.user_id
+    effective_time: effective_from
+    load_time: loaded_at
+    required: [anonymous_id, user_id, effective_from, loaded_at, match_status]
+    accepted_values:
+      match_status: [matched, pending, ambiguous]
+    approved_usage:
+      eligible_status: matched
+      app:
+        platforms: [ios, android]
+        rule: retroactively stitch all available activity for the anonymous_id to user_id when the link is stable and conflict-free
+        rationale: the MVP treats an app device identity as predominantly single-user, while recognizing this is an assumption rather than a universal fact
+      web:
+        platforms: [web]
+        rule: stitch activity only when activity_time is on or after effective_from
+        rationale: a browser may be shared by multiple people, so pre-identification history is not automatically assigned
+      ineligible_statuses: [pending, ambiguous]
+      conflict_guardrail: do not stitch when one anonymous_id maps to multiple user_ids or shows account switching, reassignment, or other ownership conflict; preserve it for review
+      lineage: always preserve raw anonymous_id and user_id alongside canonical_visitor_id
+    caveat: production identity graphs may be many-anonymous-identities-to-one-user, and app devices may still be shared or reassigned
+
+  sessions:
+    grain: one row per source-generated raw session
+    primary_key: [session_id]
+    foreign_keys:
+      - columns: [user_id]
+        references: users.user_id
+        nullable: true
+      - columns: [campaign_id]
+        references: campaigns.campaign_id
+        nullable: true
+    event_time: session_start
+    load_time: ingested_at
+    required: [session_id, anonymous_id, session_start, ingested_at, platform, app_version, channel_raw, user_agent, ip_hash, is_known_bot, sessionization_version]
+    accepted_values:
+      platform: [web, ios, android]
+      is_known_bot: ['0', '1']
+      sessionization_version: [v1_30min, v2_5min]
+    derived_fields:
+      suspected_bot: behavioral classification produced by an approved versioned rule
+      bot_reason: inspectable reason or signals supporting suspected_bot
+      bot_rule_version: version of the detection rule used for the classification
+    approved_usage:
+      headline_traffic_metrics: exclude suspected_bot traffic
+      companion_reporting: always expose the raw value, filtered value, excluded value, and excluded share
+      evidence_boundary: suspected_bot is an analytical classification and must not be described as confirmed bot identity
+      lineage: preserve all raw sessions and detection fields for audit
+    caveat: raw session count is not the approved visits metric
+
+  events:
+    grain: one emitted client event before retry deduplication
+    candidate_key: [event_id]
+    foreign_keys:
+      - columns: [session_id]
+        references: sessions.session_id
+    event_time: event_ts
+    load_time: ingested_at
+    required: [event_id, session_id, anonymous_id, event_ts, ingested_at, event_name_raw, platform, app_version, source_event_id]
+    conditionally_required:
+      product_id: required for product-scoped events
+      quantity_raw: required for quantity-bearing commerce events
+      cart_value_raw: required for cart-value-bearing events
+      experiment_id: required only for experiment-attributed analysis
+    accepted_values:
+      platform: [web, ios, android]
+      event_name_raw: [app_open, page_view, view_item, add_to_cart, cart_add, begin_checkout, purchase]
+    caveat: event_id is not unique in raw data because retries are intentionally present
+
+  orders:
+    grain: one row per server-side order
+    primary_key: [order_id]
+    foreign_keys:
+      - columns: [user_id]
+        references: users.user_id
+      - columns: [session_id]
+        references: sessions.session_id
+        nullable: true
+    event_time: order_ts
+    load_time: ingested_at
+    required: [order_id, user_id, anonymous_id, order_ts, ingested_at, subtotal, discount, shipping_fee, tax, order_total, currency, payment_status, shipping_country, device_id, payment_token_hash, is_confirmed_fraud]
+    accepted_values:
+      currency: [USD]
+      payment_status: [paid]
+      shipping_country: [US, CA, GB]
+      is_confirmed_fraud: ['0', '1']
+    invariant: order_total equals subtotal minus discount plus shipping_fee plus tax
+    derived_fields:
+      is_employee_order: true when the linked users.is_employee equals 1
+    approved_usage:
+      confirmed_fraud: exclude orders where is_confirmed_fraud equals 1 from Revenue and Conversion numerators
+      employee_orders: include in Revenue and Conversion and expose is_employee_order for filtering and disclosure
+      denominator_note: employee visits and visitors remain eligible for Conversion denominators unless excluded by another approved policy
+
+  refunds:
+    grain: one row per refund request
+    primary_key: [refund_id]
+    foreign_keys:
+      - columns: [order_id]
+        references: orders.order_id
+    event_times: [requested_at, completed_at]
+    load_time: ingested_at
+    required: [refund_id, order_id, refund_amount, requested_at, reason]
+    accepted_values:
+      reason: [changed_mind, damaged, late_delivery]
+    approved_usage:
+      recognition_time: requested_at
+      completion_required_for_net_revenue: false
+      customer_refund_window_days: 30
+      order_maturity_flag: refund_window_complete equals true when report_as_of_ts is at least 30 days after order_ts
+      finalized_net_revenue_eligibility: include only orders with refund_window_complete equal to true
+      late_request_handling: a refund requested more than 30 days after order_ts is a policy exception requiring review
+
+  campaigns:
+    grain: one row per campaign
+    primary_key: [campaign_id]
+    effective_window: [start_date, end_date]
+    required: [campaign_id, channel, start_date, end_date, daily_spend, campaign_type]
+    accepted_values:
+      campaign_type: [acquisition, promotion]
+    caveat: temporal overlap is investigation context, not proof of causality
+
+  app_releases:
+    grain: one row per platform and app version release
+    primary_key: [platform, app_version]
+    event_time: released_at
+    required: [platform, app_version, released_at, release_note]
+    accepted_values:
+      platform: [ios, android]
+    caveat: temporal overlap is investigation context, not proof of causality
+
+relationships:
+  - from: identity_map.user_id
+    to: users.user_id
+    cardinality: many_to_one_in_production; one_to_one_in_current_synthetic_data
+  - from: sessions.user_id
+    to: users.user_id
+    cardinality: many_to_one
+  - from: events.session_id
+    to: sessions.session_id
+    cardinality: many_to_one
+  - from: orders.session_id
+    to: sessions.session_id
+    cardinality: many_to_one_optional
+  - from: refunds.order_id
+    to: orders.order_id
+    cardinality: many_to_one
+  - from: sessions.campaign_id
+    to: campaigns.campaign_id
+    cardinality: many_to_one_optional
+
+derived_entities:
+  canonical_visit:
+    source_tables: [events, sessions, identity_map]
+    partition_by: canonical_visitor_id
+    order_by: event_ts
+    new_visit_condition: first valid event or gap from previous valid event greater than 30 minutes
+    preserves: [session_id, sessionization_version, event_id]
+    note: source sessions remain unchanged for lineage and audit
+
+approved_dimensions:
+  common: [date, platform, channel, country]
+  visit_and_app_analysis: [app_version]
+  campaign_investigation: [campaign_id]
+  order_analysis: [is_employee_order]
+  country_semantics:
+    traffic_and_conversion: users.country
+    revenue: orders.shipping_country
+

@@ -1,0 +1,32 @@
+metrics:
+  visits:
+    description: Count of canonical 30-minute visits; headline excludes suspected-bot traffic and is accompanied by raw and filtered impact values.
+    grain: canonical_visit
+    source: sessions + events + identity_map
+    owner: growth_analytics
+  unique_visitors:
+    description: Distinct canonical visitors after identity stitching.
+    grain: visitor_day
+    source: sessions + identity_map
+    owner: growth_analytics
+  purchase_conversion_rate:
+    description: Eligible visitors with at least one valid completed order divided by eligible visitors.
+    grain: visitor
+    source: sessions + orders
+    owner: product_analytics
+  checkout_start_rate:
+    description: Eligible sessions containing a canonical begin_checkout event divided by eligible sessions.
+    grain: session
+    source: events + sessions
+    owner: product_analytics
+  gross_revenue:
+    description: Sum of paid order_total before refunds; excludes confirmed fraud, includes employee orders, and exposes is_employee_order.
+    grain: order
+    source: orders
+    owner: finance_analytics
+  net_revenue:
+    description: Mature order-cohort gross revenue less refunds at requested_at; excludes confirmed fraud, includes employee orders, and exposes is_employee_order.
+    grain: order
+    source: orders + refunds
+    owner: finance_analytics
+

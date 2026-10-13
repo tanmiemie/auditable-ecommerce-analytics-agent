@@ -1,0 +1,106 @@
+version: 1
+status: approved_checkpoint_1
+
+metrics:
+  visits:
+    label: Visits
+    owner: growth_analytics
+    purpose: Measure canonical customer visits rather than source-generated session rows.
+    entity: canonical_visit
+    aggregation: count_distinct
+    approval_status: canonical_visit_rule_approved_at_checkpoint_1
+    definition: Distinct canonical visits reconstructed per canonical visitor from valid event time, starting a new visit when the gap between consecutive events is greater than 30 minutes; the headline value excludes visits flagged suspected_bot by the approved versioned detection rule.
+    source_tables: [sessions, events, identity_map]
+    time_field: canonical_visit_start
+    supported_dimensions: [date, platform, app_version, channel, country, campaign_id]
+    bot_reporting:
+      headline: bot_filtered
+      companion_values: [raw_value, suspected_bot_excluded_value, suspected_bot_excluded_share]
+      language_guardrail: suspected_bot must never be described as confirmed_bot without independent confirmation
+      audit_fields: [suspected_bot, bot_reason, bot_rule_version]
+    decisions_required: []
+
+  visitor_purchase_conversion_rate:
+    label: Visitor Purchase Conversion Rate
+    owner: product_analytics
+    approval_status: denominator_and_mvp_attribution_approved_at_checkpoint_1
+    purpose: Measure the share of eligible unique visitors that produces at least one eligible paid order.
+    type: ratio
+    numerator: Distinct eligible canonical visitors with at least one eligible paid order in the same measurement window.
+    denominator: Distinct eligible canonical visitors with at least one canonical visit in the measurement window.
+    source_tables: [sessions, events, identity_map, orders, users]
+    time_fields: [canonical_visit_start, order_ts]
+    supported_dimensions: [date, platform, channel, country, campaign_id]
+    attribution_policy: MVP uses the same reporting window for visits and orders; no additional 7-day or 30-day attribution window.
+    sessionless_orders: included when the order has a reliable eligible visitor identity
+    order_eligibility: exclude orders where is_confirmed_fraud equals 1; include employee orders and expose is_employee_order
+    bot_reporting:
+      headline: bot_filtered
+      companion_values: [raw_value, suspected_bot_excluded_denominator, suspected_bot_excluded_share]
+      language_guardrail: suspected_bot must never be described as confirmed_bot without independent confirmation
+    decisions_required: []
+
+  visit_purchase_conversion_rate:
+    label: Visit Purchase Conversion Rate
+    owner: product_analytics
+    approval_status: denominator_and_order_attribution_approved_at_checkpoint_1
+    purpose: Measure the share of eligible canonical visits that produces at least one eligible paid order.
+    type: ratio
+    numerator: Distinct eligible canonical visits attributed to at least one eligible paid order.
+    denominator: Distinct eligible canonical visits in the measurement window.
+    source_tables: [sessions, events, identity_map, orders]
+    time_fields: [canonical_visit_start, order_ts]
+    supported_dimensions: [date, platform, app_version, channel, country, campaign_id]
+    attribution_policy: An order must link through session_id to a source session that belongs to the canonical visit; no time-window fallback in MVP.
+    sessionless_orders: excluded from visit conversion but retained for eligible visitor conversion and revenue
+    order_eligibility: exclude orders where is_confirmed_fraud equals 1; include employee orders and expose is_employee_order
+    bot_reporting:
+      headline: bot_filtered
+      companion_values: [raw_value, suspected_bot_excluded_denominator, suspected_bot_excluded_share]
+      language_guardrail: suspected_bot must never be described as confirmed_bot without independent confirmation
+    decisions_required: []
+
+  gross_revenue:
+    label: Gross Revenue
+    owner: finance_analytics
+    approval_status: revenue_components_approved_at_checkpoint_1
+    purpose: Measure eligible paid order value before completed refunds.
+    entity: order
+    aggregation: sum
+    definition: Sum of order_total for eligible paid orders, before completed refunds; order_total equals subtotal minus discount plus shipping_fee plus tax.
+    order_eligibility: exclude orders where is_confirmed_fraud equals 1; include employee orders and expose is_employee_order
+    source_tables: [orders, users]
+    time_field: order_ts
+    supported_dimensions: [date, platform, channel, shipping_country, campaign_id, is_employee_order]
+    decisions_required: []
+
+  net_revenue:
+    label: Net Revenue
+    owner: finance_analytics
+    approval_status: refund_recognition_and_maturity_policy_approved_at_checkpoint_1
+    purpose: Measure finalized eligible order-cohort revenue after refund requests, once the 30-day refund window has closed.
+    entity: order
+    aggregation: sum
+    definition: For eligible orders whose refund window is complete as of the report timestamp, sum order_total and subtract eligible refund_amount when the refund was requested by the report timestamp; refund completion is not required.
+    formula: sum(order_total) - sum(refund_amount for eligible refunds with requested_at <= report_as_of_ts)
+    source_tables: [orders, refunds, users]
+    time_field: order_ts
+    refund_recognition_time: requested_at
+    refund_window_days: 30
+    refund_window_complete: report_as_of_ts >= order_ts + 30 days
+    maturity_filter: include only orders where refund_window_complete is true
+    immature_revenue_handling: exclude from finalized Net Revenue and disclose separately as revenue still inside the refund window
+    late_refund_guardrail: refund requests later than order_ts + 30 days are policy exceptions and require review rather than silent inclusion or exclusion
+    order_eligibility: exclude orders where is_confirmed_fraud equals 1; include employee orders and expose is_employee_order
+    supported_dimensions: [date, platform, channel, shipping_country, campaign_id, is_employee_order]
+    decisions_required: []
+
+common_rules:
+  currency: USD only in MVP
+  timezone: UTC
+  missing_periods: preserve as unavailable; do not zero-fill
+  evidence: every answer must expose metric definition, time range, filters, source tables, quality status, and material limitations
+  derived_flags:
+    is_employee_order: users.is_employee equals 1 for the order user_id
+    suspected_bot: versioned behavioral classification for traffic filtering; it is not proof of bot identity
+

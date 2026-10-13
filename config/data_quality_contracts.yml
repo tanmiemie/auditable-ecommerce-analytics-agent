@@ -1,0 +1,151 @@
+version: 1
+status: approved_checkpoint_1
+
+checks:
+  primary_keys:
+    severity: critical
+    rules:
+      - users.user_id must be unique and non-null
+      - identity_map.anonymous_id must be unique in the current synthetic dataset
+      - sessions.session_id must be unique and non-null
+      - orders.order_id must be unique and non-null
+      - refunds.refund_id must be unique and non-null
+      - campaigns.campaign_id must be unique and non-null
+      - app_releases.[platform, app_version] must be unique and non-null
+
+  event_duplicates:
+    severity: high
+    observed: 896 raw rows duplicate event_id
+    observed_content_conflicts: 0 duplicate event IDs have conflicting business fields in the current dataset
+    approved_action:
+      - retain all raw rows
+      - select the earliest ingested row as the canonical event, with deterministic tie-breakers
+      - when duplicate rows disagree on business fields, continue the build, retain the earliest row, and flag content_conflict for review
+      - record removed-row count, ingestion range, business variant count, and conflict status
+
+  event_schema_migration:
+    severity: high
+    observed: Android 6.2.0 uses cart_add after the instrumentation migration
+    approved_action:
+      - map cart_add to canonical add_to_cart
+      - preserve event_name_raw
+      - expose event_mapping_rule with platform and version context
+
+  tracking_outage:
+    severity: critical
+    observed: iOS 6.1.0 has server orders but zero checkout events on 2026-03-15 through 2026-03-18
+    approved_action:
+      - compare client checkout events with independent server-side paid orders by day, platform, and app_version
+      - mark the client checkout metric unavailable when paid orders remain but checkout telemetry is absent
+      - never synthesize missing client events from orders
+
+  referential_integrity:
+    severity: high
+    observed: no orphans in the currently checked user, session, order, refund, and campaign relationships
+    rules:
+      - non-empty sessions.user_id must match users.user_id
+      - identity_map.user_id must match users.user_id
+      - events.session_id must match sessions.session_id
+      - non-empty orders.session_id must match sessions.session_id
+      - refunds.order_id must match orders.order_id
+      - non-empty sessions.campaign_id must match campaigns.campaign_id
+
+  identity_status:
+    severity: high
+    observed: 9743 matched and 257 pending identity links
+    approved_action:
+      - do not stitch pending or ambiguous links
+      - for ios and android, retroactively stitch matched links only when the anonymous_id is stable and conflict-free
+      - for web, apply matched links only at or after effective_from
+      - if an anonymous_id maps to multiple users or shows account switching or reassignment, do not stitch and send the identity for review
+      - preserve raw identity fields for lineage and audit
+
+  sessionization:
+    severity: high
+    observed: 70457 v1_30min rows and 822 v2_5min rows
+    proposed_action: preserve raw sessions and build canonical visits under the approved rule
+
+  bot_status:
+    severity: high
+    observed: is_known_bot is zero for all raw sessions
+    approved_action:
+      - default traffic-derived headline metrics to bot-filtered values
+      - always publish raw and bot-filtered values plus the excluded count and share
+      - label behavioral classifications only as suspected_bot unless independently confirmed
+      - require suspected_bot, bot_reason, and bot_rule_version in the trusted traffic layer
+      - preserve all raw traffic for audit and allow the filter to be reproduced by rule version
+      - do not apply suspected-bot traffic filtering to server-side Revenue; confirmed-fraud policy controls order exclusion
+
+  order_completeness:
+    severity: medium
+    observed: 45 orders have no session_id; all order totals reconcile to components
+    proposed_action: retain server-side orders; do not require session attribution for revenue eligibility
+
+  order_eligibility:
+    severity: high
+    observed: 85 confirmed-fraud orders and 4 employee orders; no overlap between the two groups
+    approved_action:
+      - exclude confirmed-fraud orders from Revenue and Conversion numerators
+      - retain employee orders in Revenue and Conversion
+      - derive and expose is_employee_order from users.is_employee
+      - report employee-order contribution when it is material to an answer or investigation
+
+  order_status_snapshots:
+    severity: high
+    observed: 22032 history rows resolve to 5508 latest completed order statuses with zero amount mismatches
+    approved_action:
+      - retain status history
+      - select the latest valid status by status_ts and ingested_at for current-state use
+      - never sum order snapshots as revenue
+
+  delayed_fraud_labels:
+    severity: high
+    observed: confirmed-fraud labels have no label-effective timestamp
+    approved_action:
+      - treat current fraud-filtered metrics as restated with latest known labels
+      - expose fraud_as_of_status
+      - do not claim the label was available at historical report time
+      - require a label-effective timestamp before true historical as-of reconstruction
+
+  refund_timeliness:
+    severity: high
+    observed: refund completion and ingestion extend beyond the order observation window
+    observed_refund_window: all 185 current refund requests were initiated within 30 days of order_ts
+    approved_action:
+      - require an explicit report_as_of_ts
+      - subtract a refund at requested_at without waiting for completed_at
+      - derive refund_window_complete as report_as_of_ts greater than or equal to order_ts plus 30 days
+      - exclude immature orders from finalized Net Revenue and disclose their revenue separately
+      - flag refunds requested more than 30 days after order_ts for review
+      - verify aggregate refund_amount does not exceed order_total for an order
+
+  source_freshness:
+    severity: high
+    observed: events arrive up to 48 hours late; order lag reaches 1.5 hours; refund ingestion lag reaches 185 hours
+    approved_action:
+      - retain source time and ingestion time
+      - publish average and maximum ingestion lag by source
+      - require a report as-of timestamp
+      - mark recent periods provisional until the owning metric defines and passes its maturity threshold
+
+  experiment_instrumentation:
+    severity: critical
+    observed: iOS 6.2.1 add_to_cart events have material experiment_id missingness on 2026-04-10 through 2026-04-13; 10 exposures have no assignment
+    approved_action:
+      - compute required-property missingness for assigned-user experiment events
+      - mark affected experiment metric slices unavailable
+      - report exposure-without-assignment violations
+      - do not publish experiment conclusions from unavailable slices
+
+  categorical_values:
+    severity: high
+    proposed_action: fail or quarantine unexpected stable enum values; preserve raw channel labels pending approved mapping
+
+  context_sources:
+    severity: medium
+    approved_action:
+      - preserve campaign, product, and release dimensions in the trusted layer
+      - preserve legitimate campaign, promotion, stockout, and UX-regression windows
+      - treat temporal overlap as context rather than proof of causality
+      - require normal-business negative-control regression tests
+
