@@ -30,7 +30,7 @@ Most analytics-agent demos begin with a clean table and end with generated SQL. 
 | **Deterministic agent orchestration** | Intent parsing, metric resolution, health checks, comparison, investigation, and response assembly follow an inspectable workflow | Provides an auditable baseline before adding broader LLM flexibility |
 | **Quality-aware abstention** | Coverage checks and metric-specific health gates return `unavailable` instead of zero, extrapolation, or fabricated events | Makes refusal a product behavior rather than an error case |
 | **Human-in-the-loop governance** | Metric meaning, risk policy, and release boundaries are approved at explicit checkpoints | Keeps high-impact business decisions with accountable owners |
-| **Golden evaluation and regression tests** | Evaluator-only truth, negative controls, 37 automated tests, and eight golden scenarios validate numbers and policy behavior | Protects the system from silent semantic and data-quality regressions |
+| **Golden evaluation and regression tests** | Evaluator-only truth, negative controls, 41 automated tests, and eight golden scenarios validate numbers, policy behavior, and UI formatting | Protects the system from silent semantic and data-quality regressions |
 
 The key design pattern is **deterministic computation for metrics, governed evidence for explanations, and explicit abstention when trust requirements fail**.
 
@@ -38,7 +38,7 @@ The key design pattern is **deterministic computation for metrics, governed evid
 
 | Evidence | Result |
 |---|---:|
-| Unit and regression tests | **37/37 passed** |
+| Unit and regression tests | **41/41 passed** |
 | Golden evaluation scenarios | **8/8 passed** |
 | Injected data incidents | **8** |
 | Legitimate-change negative controls | **4** |
@@ -100,7 +100,7 @@ See [the semantic-layer specification](docs/semantic_layer.md) and [metric contr
 
 ## Run locally
 
-Requirements: Python 3.10+ and SQLite. The project uses only the Python standard library.
+Requirements: Python 3.10+ and SQLite. The analytics engine uses only the Python standard library; the optional Streamlit interface uses the packages in `requirements.txt`.
 
 ```bash
 git clone https://github.com/tanmiemie/auditable-ecommerce-analytics-agent.git
@@ -118,6 +118,17 @@ PYTHONPATH=src python3 scripts/run_demo.py
 PYTHONPATH=src python3 -m unittest discover -s tests -v
 PYTHONPATH=src python3 evals/run_evals.py
 ```
+
+### Launch the Streamlit interface
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+streamlit run streamlit_app.py
+```
+
+The interface connects directly to the governed agent. It displays the cleaned business result, comparisons, quality and policy flags, source rows, limitations, parameterized SQL, and the execution trace. The first launch builds the trusted SQLite layer automatically when it is not already present.
 
 Run one question:
 
@@ -150,6 +161,7 @@ The agent cannot execute arbitrary SQL, modify source data, confirm suspected fr
 | `src/analytics_agent/trusted_layer.py` | Deterministic raw-to-trusted transformation |
 | `src/analytics_agent/governed_tools.py` | Whitelisted, parameterized metric and evidence tools |
 | `src/analytics_agent/agent.py` | Scoped deterministic orchestration and response contract |
+| `streamlit_app.py` | Interactive question-answering, visualization, quality flags, SQL, and trace UI |
 | `tests/` | Unit and policy regression tests |
 | `evals/` | Golden cases and deterministic evaluator runner |
 | `.agents/skills/data-cleanup/` | Reusable cleanup workflow and check registry |

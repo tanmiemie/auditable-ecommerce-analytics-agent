@@ -14,12 +14,14 @@ This public log summarizes the decisions that materially change business meaning
 | Mark checkout metrics unavailable during missing telemetry | Server orders cannot reconstruct absent client checkout events. | User-visible outage golden case |
 | Return SQL, parameters, sources, and trace | Reviewers must be able to reproduce and challenge an answer. | Answer-contract tests |
 | Abstain outside data coverage | Zero and extrapolation would both be misleading. | Out-of-coverage golden case |
+| Make the Streamlit UI an audit surface, not a separate calculation layer | The frontend must preserve the governed answer contract instead of recomputing or hiding metric logic. | Live browser checks of answered, adjusted, and unavailable states plus UI-helper tests |
 
 ## Release evidence
 
-- Unit and regression tests: 37/37 passing.
+- Unit and regression tests: 41/41 passing.
 - Golden scenarios: 8/8 passing.
 - The first evaluation run was 7/8; the fraud-investigation failure was repaired by adding governed evidence retrieval rather than changing the approved inclusion policy.
 - Evaluator-only truth remains isolated from the agent-facing runtime.
+- Streamlit browser verification covered the default adjusted result, the quality flag, governed SQL and parameters, the execution trace, and an out-of-coverage abstention.
 
 These results apply to the fixed synthetic pilot and should not be interpreted as production accuracy.
