@@ -6,6 +6,8 @@ Most analytics-agent demos begin with a clean table and end with generated SQL. 
 
 > Portfolio status: deterministic MVP on a reproducible synthetic ecommerce environment. It demonstrates product and system design; it is not a production-accuracy claim.
 
+**[Try the live Streamlit demo](https://auditable-ecommerce-analytics-agent.streamlit.app/)**
+
 `Python` · `SQLite` · `Analytics Agent` · `Semantic Layer` · `Data Contracts` · `Data Quality Gates` · `Governed SQL` · `Deterministic Orchestration` · `Human-in-the-Loop` · `Golden Evals` · `Abstention`
 
 ## Why this project is different
@@ -120,6 +122,8 @@ PYTHONPATH=src python3 evals/run_evals.py
 ```
 
 ### Launch the Streamlit interface
+
+Live deployment: [auditable-ecommerce-analytics-agent.streamlit.app](https://auditable-ecommerce-analytics-agent.streamlit.app/)
 
 ```bash
 python3 -m venv .venv

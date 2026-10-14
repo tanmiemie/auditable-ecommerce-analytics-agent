@@ -16,6 +16,7 @@ This public log summarizes the decisions that materially change business meaning
 | Abstain outside data coverage | Zero and extrapolation would both be misleading. | Out-of-coverage golden case |
 | Make the Streamlit UI an audit surface, not a separate calculation layer | The frontend must preserve the governed answer contract instead of recomputing or hiding metric logic. | Live browser checks of answered, adjusted, and unavailable states plus UI-helper tests |
 | Regenerate synthetic data on first cloud launch | Generated databases stay out of Git, but a fresh deployment must remain reproducible and runnable. | Cold-start smoke test from an empty temporary data directory |
+| Publish a live, read-only Streamlit demo | Recruiters and collaborators can inspect the product behavior without local setup while the governed tools remain non-mutating. | Community Cloud deployment plus live adjusted-result and out-of-coverage browser checks |
 
 ## Release evidence
 
@@ -24,5 +25,6 @@ This public log summarizes the decisions that materially change business meaning
 - The first evaluation run was 7/8; the fraud-investigation failure was repaired by adding governed evidence retrieval rather than changing the approved inclusion policy.
 - Evaluator-only truth remains isolated from the agent-facing runtime.
 - Streamlit browser verification covered the default adjusted result, the quality flag, governed SQL and parameters, the execution trace, and an out-of-coverage abstention.
+- Public deployment verified at `https://auditable-ecommerce-analytics-agent.streamlit.app/`: the cold start completed, the default January Web question returned 5,423 adjusted Visits, and a 2025 request returned `Unavailable` rather than a fabricated value.
 
 These results apply to the fixed synthetic pilot and should not be interpreted as production accuracy.
