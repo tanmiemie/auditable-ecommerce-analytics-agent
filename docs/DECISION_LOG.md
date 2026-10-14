@@ -15,6 +15,7 @@ This public log summarizes the decisions that materially change business meaning
 | Return SQL, parameters, sources, and trace | Reviewers must be able to reproduce and challenge an answer. | Answer-contract tests |
 | Abstain outside data coverage | Zero and extrapolation would both be misleading. | Out-of-coverage golden case |
 | Make the Streamlit UI an audit surface, not a separate calculation layer | The frontend must preserve the governed answer contract instead of recomputing or hiding metric logic. | Live browser checks of answered, adjusted, and unavailable states plus UI-helper tests |
+| Regenerate synthetic data on first cloud launch | Generated databases stay out of Git, but a fresh deployment must remain reproducible and runnable. | Cold-start smoke test from an empty temporary data directory |
 
 ## Release evidence
 

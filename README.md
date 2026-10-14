@@ -128,7 +128,7 @@ pip install -r requirements.txt
 streamlit run streamlit_app.py
 ```
 
-The interface connects directly to the governed agent. It displays the cleaned business result, comparisons, quality and policy flags, source rows, limitations, parameterized SQL, and the execution trace. The first launch builds the trusted SQLite layer automatically when it is not already present.
+The interface connects directly to the governed agent. It displays the cleaned business result, comparisons, quality and policy flags, source rows, limitations, parameterized SQL, and the execution trace. When generated data is absent—as it is on a fresh cloud deployment—the first launch deterministically regenerates the synthetic environment and then builds the trusted SQLite layer.
 
 Run one question:
 

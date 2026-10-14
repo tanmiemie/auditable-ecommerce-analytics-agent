@@ -13,7 +13,7 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from analytics_agent.agent import AnalyticsAgent
 from analytics_agent.governed_tools import METRICS
-from analytics_agent.trusted_layer import TRUSTED_DB
+from analytics_agent.trusted_layer import RAW_DB, TRUSTED_DB
 from analytics_agent.ui_helpers import (
     chart_rows,
     format_delta,
@@ -78,6 +78,10 @@ st.markdown(
 
 @st.cache_resource(show_spinner="Building the governed analytics layer…")
 def get_agent() -> AnalyticsAgent:
+    if not RAW_DB.exists():
+        from generator.generate_data import generate
+
+        generate(seed=42, n_users=10_000, n_days=120)
     return AnalyticsAgent(TRUSTED_DB)
 
 
